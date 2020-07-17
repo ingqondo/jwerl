@@ -1,6 +1,6 @@
 -module(jwerl).
 
--export([sign/1, sign/2, sign/3,
+-export([sign/1, sign/2, sign/3, sign/4,
          verify/1, verify/2, verify/3, verify/4, verify/5,
          header/1]).
 
@@ -252,7 +252,7 @@ payload(Data, Algorithm, Key) ->
   end.
 
 encode_input(Data, Header) when is_binary(Header) ->
-  <<(base64_encode(Header))/binary, ".", (base64_encode(Data))/binary>>;
+  <<Header/binary, ".", (base64_encode(Data))/binary>>;
 
 encode_input(Data, Options) ->
   <<(base64_encode(jsx:encode(Options)))/binary, ".", (base64_encode(Data))/binary>>.
