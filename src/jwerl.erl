@@ -44,7 +44,12 @@ sign(Data, Algorithm) ->
 % @end
 -spec sign(Data :: map() | list(), Algorithm :: algorithm(), KeyOrPem :: binary()) -> binary().
 sign(Data, Algorithm, KeyOrPem) when (is_map(Data) orelse is_list(Data)), is_atom(Algorithm), is_binary(KeyOrPem) ->
-    encode(jsx:encode(Data), config_headers(#{alg => algorithm_to_binary(Algorithm)}), KeyOrPem).
+    sign(Data, Algorithm, KeyOrPem, config_headers(#{alg => algorithm_to_binary(Algorithm)})).
+
+
+-spec sign(Data :: map() | list(), Algorithm :: algorithm(), KeyOrPem :: binary(), Header :: map() | binary()) -> binary().
+sign(Data, Algorithm, KeyOrPem, Header) when (is_map(Data) orelse is_list(Data)), is_atom(Algorithm), is_binary(KeyOrPem) ->
+    encode(jsx:encode(Data), Header, KeyOrPem, Algorithm).
 
 % @equiv verify(Data, <<"">>, hs256, #{}, #{})
 verify(Data) ->
@@ -186,11 +191,10 @@ get_claims(Map) when is_map(Map) ->
 get_claims(List) when is_list(List) ->
   List.
 
-encode(Data, #{alg := <<"none">>} = Options, _) ->
-  encode_input(Data, Options);
-encode(Data, Options, Key) ->
+
+encode(Data, Options, Key, Algorithm) ->
   Input = encode_input(Data, Options),
-  <<Input/binary, ".", (signature(maps:get(alg, Options), Key, Input))/binary>>.
+  <<Input/binary, ".", (signature(Algorithm, Key, Input))/binary>>.
 
 decode(Data, KeyOrPem, Algorithm) ->
   Header = decode_header(Data),
@@ -246,6 +250,9 @@ payload(Data, Algorithm, Key) ->
     _ ->
       {error, invalid_signature}
   end.
+
+encode_input(Data, Header) when is_binary(Header) ->
+  <<(base64_encode(Header))/binary, ".", (base64_encode(Data))/binary>>;
 
 encode_input(Data, Options) ->
   <<(base64_encode(jsx:encode(Options)))/binary, ".", (base64_encode(Data))/binary>>.
